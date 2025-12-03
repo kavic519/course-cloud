@@ -1,0 +1,109 @@
+-- Nacos 数据库初始化脚本
+-- 创建 Nacos 配置数据库
+
+CREATE DATABASE IF NOT EXISTS nacos CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+USE nacos;
+
+-- 创建配置表
+CREATE TABLE IF NOT EXISTS config_info (
+  id bigint(20) NOT NULL AUTO_INCREMENT,
+  data_id varchar(255) NOT NULL,
+  group_id varchar(128) NOT NULL,
+  content longtext NOT NULL,
+  md5 varchar(32) DEFAULT NULL,
+  gmt_create datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  gmt_modified datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  src_user text,
+  src_ip varchar(50) DEFAULT NULL,
+  app_name varchar(128) DEFAULT NULL,
+  tenant_id varchar(128) DEFAULT '',
+  c_desc varchar(256) DEFAULT NULL,
+  c_use varchar(64) DEFAULT NULL,
+  effect varchar(64) DEFAULT NULL,
+  type varchar(64) DEFAULT NULL,
+  c_schema text,
+  encrypted_data_key text NOT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_configinfo_datagrouptenant (data_id,group_id,tenant_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 创建服务信息表
+CREATE TABLE IF NOT EXISTS services (
+  id bigint(20) NOT NULL AUTO_INCREMENT,
+  name varchar(128) NOT NULL,
+  group_name varchar(128) NOT NULL,
+  namespace_id varchar(128) NOT NULL,
+  metadata text,
+  protect_threshold float DEFAULT '0',
+  selector_json text,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_services_name_group_namespace (name,group_name,namespace_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 创建实例信息表
+CREATE TABLE IF NOT EXISTS instances (
+  id bigint(20) NOT NULL AUTO_INCREMENT,
+  service_name varchar(128) NOT NULL,
+  ip varchar(32) NOT NULL,
+  port int(11) NOT NULL,
+  weight double NOT NULL DEFAULT '1',
+  healthy tinyint(1) NOT NULL DEFAULT '0',
+  enabled tinyint(1) NOT NULL DEFAULT '1',
+  ephemeral tinyint(1) NOT NULL DEFAULT '1',
+  cluster_name varchar(128) NOT NULL,
+  service_name_append_cluster varchar(256) NOT NULL,
+  metadata text,
+  last_beat bigint(20) DEFAULT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_instances_service_cluster_ip_port (service_name,cluster_name,ip,port)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 创建权限表
+CREATE TABLE IF NOT EXISTS permissions (
+  id bigint(20) NOT NULL AUTO_INCREMENT,
+  role varchar(50) NOT NULL,
+  resource varchar(512) NOT NULL,
+  action varchar(8) NOT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_role_permission (role,resource,action)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 创建角色表
+CREATE TABLE IF NOT EXISTS roles (
+  id bigint(20) NOT NULL AUTO_INCREMENT,
+  username varchar(50) NOT NULL,
+  role varchar(50) NOT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_username_role (username,role)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 创建用户表
+CREATE TABLE IF NOT EXISTS users (
+  id bigint(20) NOT NULL AUTO_INCREMENT,
+  username varchar(50) NOT NULL,
+  password varchar(500) NOT NULL,
+  enabled tinyint(1) NOT NULL DEFAULT '1',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_username (username)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 插入默认用户 (nacos/nacos)
+INSERT IGNORE INTO users (username, password, enabled) VALUES 
+('nacos', '$2a$10$EuWPZHzz32dJN7jexM34MOeYirDdFAZm2kuWj7VEOJhhZkDrxfvUu', 1);
+
+-- 插入默认角色
+INSERT IGNORE INTO roles (username, role) VALUES 
+('nacos', 'ROLE_ADMIN');
+
+-- 插入默认权限
+INSERT IGNORE INTO permissions (role, resource, action) VALUES 
+('ROLE_ADMIN', '*', 'rw');
+
+-- 创建索引以提高查询性能
+CREATE INDEX idx_configinfo_gmt_modified ON config_info(gmt_modified);
+CREATE INDEX idx_configinfo_data_id ON config_info(data_id);
+CREATE INDEX idx_configinfo_group_id ON config_info(group_id);
+CREATE INDEX idx_instances_service_name ON instances(service_name);
+CREATE INDEX idx_instances_cluster_name ON instances(cluster_name);
+CREATE INDEX idx_instances_last_beat ON instances(last_beat);
