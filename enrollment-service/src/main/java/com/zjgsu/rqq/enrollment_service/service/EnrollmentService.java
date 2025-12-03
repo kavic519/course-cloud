@@ -160,7 +160,13 @@ public class EnrollmentService {
         String url = "http://" + CATALOG_SERVICE_NAME + "/api/courses/" + courseId;
         Map<String, Object> updateData = Map.of("enrolled", newCount);
         try {
-            restTemplate.patchForObject(url, updateData, Void.class);
+            // 使用 exchange 方法发送 PATCH 请求
+            org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+            headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
+            org.springframework.http.HttpEntity<Map<String, Object>> requestEntity = 
+                new org.springframework.http.HttpEntity<>(updateData, headers);
+            
+            restTemplate.exchange(url, org.springframework.http.HttpMethod.PATCH, requestEntity, Void.class);
             log.info("课程选课人数更新成功: courseId={}, newCount={}", courseId, newCount);
         } catch (Exception e) {
             log.error("更新课程选课人数失败: courseId={}, error={}", courseId, e.getMessage());

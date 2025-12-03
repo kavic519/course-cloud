@@ -65,10 +65,20 @@
 			<artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
 			<version>2025.0.0.0</version>
 		</dependency>
+		<!-- Spring Cloud LoadBalancer for service discovery -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-loadbalancer</artifactId>
+		</dependency>
 		<!-- Spring Boot Actuator for health checks -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+		<!-- Apache HttpComponents for PATCH method support -->
+		<dependency>
+			<groupId>org.apache.httpcomponents.client5</groupId>
+			<artifactId>httpclient5</artifactId>
 		</dependency>
 	</dependencies>
 

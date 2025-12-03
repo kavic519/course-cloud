@@ -12,14 +12,14 @@ spring:
   cloud:
     nacos:
       discovery:
-        server-addr: localhost:8848
+        server-addr: nacos:8848
         username: nacos  # 默认用户名
         password: nacos  # 默认密码
         namespace: public
         group: DEFAULT_GROUP
         cluster-name: DEFAULT
   datasource:
-    url: jdbc:mysql://10.234.147.49:3309/user_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
+    url: jdbc:mysql://user-db:3306/user_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
     username: user_user
     password: user_pass
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -40,10 +40,6 @@ spring:
       charset: UTF-8
       enabled: true
       force: true
-
-# 添加选课服务URL配置
-enrollment-service:
-  url: http://localhost:8083
 
 management:
   endpoints:
