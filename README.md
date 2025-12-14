@@ -26,7 +26,7 @@
    - 选课记录管理
    - 课程容量验证
   
-4.**gateway-service** (API 网关与统一认证) - 端口 8090
+4. **gateway-service** (API 网关与统一认证) - 端口 8090
    - 客户端 → Gateway (8090) → User/Catalog/Enrollment Services
    - 所有外部请求必须经过 Gateway
    - Gateway 负责统一的 JWT 认证，验证通过后将用户信息添加到请求头并转发给后端服务
