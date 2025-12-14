@@ -5,6 +5,9 @@
 第八周
 [docs/week08-notes.md 记录](https://github.com/kavic519/course-cloud/blob/master/docs/week08-notes.md "docs/week08-notes.md 记录")
 
+第九周
+[docs/week09-notes.md 记录](https://github.com/kavic519/course-cloud/blob/master/docs/week09-notes.md "docs/week09-notes.md 记录")
+
 ## 项目概述
 
 本项目是一个完整的校园选课系统，包含以下微服务：
