@@ -1,6 +1,8 @@
 # 校园选课系统微服务项目
 
 基于 Spring Boot 和 Spring Cloud 的校园选课系统微服务项目，使用 Nacos 作为服务注册与发现中心。
+
+第八周
 [docs/week08-notes.md 记录](https://github.com/kavic519/course-cloud/blob/master/docs/week08-notes.md "docs/week08-notes.md 记录")
 
 ## 项目概述
