@@ -271,6 +271,7 @@ chmod +x jwt.sh
 POST ```http://localhost:8090/api/auth/register```
 
 ![用户注册成功截图](images/jwt-register-success.png)
+
 *说明：用户注册成功，返回200状态码和用户信息*
 
 ### ==============================================================
