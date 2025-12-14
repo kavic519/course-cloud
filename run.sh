@@ -64,7 +64,7 @@ stop_existing_services() {
 check_required_ports() {
     log_info "检查必需端口..."
     
-    local required_ports=(8848 3306 3307 3308 3309 8081 8082 8083 8084 8085 8086 8087 8088 8090)
+    local required_ports=(8848 3306 3307 3308 3309 8080 8090 8083 8181 8182 8183 8281 8282 8283)
     local occupied_ports=()
     
     for port in "${required_ports[@]}"; do
