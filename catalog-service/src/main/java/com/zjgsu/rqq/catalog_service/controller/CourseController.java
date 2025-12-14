@@ -5,9 +5,11 @@ import com.zjgsu.rqq.catalog_service.model.Course;
 import com.zjgsu.rqq.catalog_service.service.CourseService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -19,11 +21,24 @@ public class CourseController {
     @Autowired
     private CourseService courseService;
 
+    // @Value("${server.port:8082}")
+    // private String serverPort;
+
+    // @Value("${HOST_PORT:${server.port:8082}}")
+    // private String hostPort;
+
+    String containerName = System.getenv("CONTAINER_NAME");
+    String externalPort = System.getenv("EXTERNAL_PORT");
+
     // 获取所有课程
     @GetMapping
-    public ResponseEntity<ApiResponse<List<Course>>> getAllCourses() {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getAllCourses() {
         List<Course> courses = courseService.getAllCourses();
-        return ResponseEntity.ok(ApiResponse.success(courses));
+        Map<String, Object> responseData = new HashMap<>();
+        responseData.put("courses", courses);
+        // responseData.put("port", externalPort);
+        // responseData.put("containerPort", serverPort);
+        return ResponseEntity.ok(ApiResponse.success(responseData));
     }
 
     // 搜索课程
@@ -128,6 +143,15 @@ public class CourseController {
             return ResponseEntity.status(404)
                     .body(ApiResponse.error(404, e.getMessage()));
         }
+    }
+
+    // 获取端口信息
+    @GetMapping("/port")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getPort() {
+        Map<String, Object> containerData = new HashMap<>();
+        containerData.put("containerName", containerName);
+        containerData.put("Port", externalPort);
+        return ResponseEntity.ok(ApiResponse.success(containerData));
     }
 
     // 删除课程

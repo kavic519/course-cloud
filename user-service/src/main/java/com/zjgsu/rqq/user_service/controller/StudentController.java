@@ -11,7 +11,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -24,8 +26,14 @@ public class StudentController {
     @Autowired
     private RestTemplate restTemplate;
 
-    @Value("${enrollment-service.url:http://localhost:8083}")
-    private String enrollmentServiceUrl;
+    // @Value("${enrollment-service.url:http://enrollment-service:8083}")
+    // private String enrollmentServiceUrl;
+
+    private static final String USER_SERVICE_NAME = "enrollment-service";
+
+
+    String containerName = System.getenv("CONTAINER_NAME");
+    String externalPort = System.getenv("EXTERNAL_PORT");
 
 //    @Autowired
 //    private EnrollmentService enrollmentService;
@@ -41,7 +49,11 @@ public class StudentController {
         if (studentid != null && !studentid.trim().isEmpty()) {
             Optional<Student> student = studentService.getStudentByStudentId(studentid);
             if (student.isPresent()) {
-                return ResponseEntity.ok(ApiResponse.success(student.get()));
+                Map<String, Object> responseData = new HashMap<>();
+                // responseData.put("containerName", containerName);
+                // responseData.put("Port", externalPort);
+                responseData.put("student", student.get());
+                return ResponseEntity.ok(ApiResponse.success(responseData));
             } else {
                 return ResponseEntity.status(404)
                         .body(ApiResponse.error(404, "学生不存在，学号: " + studentid));
@@ -52,7 +64,9 @@ public class StudentController {
         if (email != null && !email.trim().isEmpty()) {
             Optional<Student> student = studentService.getStudentByEmail(email);
             if (student.isPresent()) {
-                return ResponseEntity.ok(ApiResponse.success(student.get()));
+                Map<String, Object> responseData = new HashMap<>();
+                responseData.put("student", student.get());
+                return ResponseEntity.ok(ApiResponse.success(responseData));
             } else {
                 return ResponseEntity.status(404)
                         .body(ApiResponse.error(404, "学生不存在，邮箱: " + email));
@@ -66,7 +80,9 @@ public class StudentController {
                 return ResponseEntity.status(404)
                         .body(ApiResponse.error(404, "没有找到专业《" + major + "》下的学生"));
             } else {
-                return ResponseEntity.ok(ApiResponse.success(students));
+                Map<String, Object> responseData = new HashMap<>();
+                responseData.put("students", students);
+                return ResponseEntity.ok(ApiResponse.success(responseData));
             }
         }
 
@@ -77,13 +93,17 @@ public class StudentController {
                 return ResponseEntity.status(404)
                         .body(ApiResponse.error(404, "没有找到年级" + grade + "下的学生"));
             } else {
-                return ResponseEntity.ok(ApiResponse.success(students));
+                Map<String, Object> responseData = new HashMap<>();
+                responseData.put("students", students);
+                return ResponseEntity.ok(ApiResponse.success(responseData));
             }
         }
 
         // 如果没有提供查询参数，返回所有学生
         List<Student> students = studentService.getAllStudents();
-        return ResponseEntity.ok(ApiResponse.success(students));
+        Map<String, Object> responseData = new HashMap<>();
+        responseData.put("students", students);
+        return ResponseEntity.ok(ApiResponse.success(responseData));
     }
 
     @GetMapping("/{id}")
@@ -132,6 +152,14 @@ public class StudentController {
         }
     }
 
+    @GetMapping("/port")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getPort() {
+        Map<String, Object> containerData = new HashMap<>();
+        containerData.put("containerName", containerName);
+        containerData.put("Port", externalPort);
+        return ResponseEntity.ok(ApiResponse.success(containerData));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteStudent(@PathVariable String id) {
         try {
@@ -140,7 +168,7 @@ public class StudentController {
                     .orElseThrow(() -> new IllegalArgumentException("学生不存在: " + id));
 
             // 2. 调用选课服务检查学生是否有选课记录
-            String enrollmentCheckUrl = enrollmentServiceUrl + "/api/enrollments/student/" + student.getStudentId();
+            String enrollmentCheckUrl = "http://" + USER_SERVICE_NAME + "/api/enrollments/student/" + student.getStudentId();
             try {
                 ResponseEntity<Object> response = restTemplate.getForEntity(enrollmentCheckUrl, Object.class);
 

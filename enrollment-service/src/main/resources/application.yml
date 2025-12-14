@@ -1,5 +1,5 @@
 server:
-  port: 8083
+#   port: 8083
   servlet:
     encoding:
       charset: UTF-8
@@ -18,6 +18,41 @@ spring:
         namespace: public
         group: DEFAULT_GROUP
         cluster-name: DEFAULT
+
+
+
+    loadbalancer:
+      cache:
+        enabled: true
+        ttl: 35s
+        capacity: 256
+
+    openfeign:
+      circuitbreaker:
+        enabled: true
+        group:
+          enabled: true
+      client:
+        config:
+          default:
+            connectTimeout: 5000
+            readTimeout: 5000
+            loggerLevel: basic
+    circuitbreaker:
+      resilience4j:
+        enabled: true
+
+#spring:
+#  cloud:
+#    openfeign:
+#      circuitbreaker:
+#        enabled: true
+#        group:
+#          enabled: true
+#    circuitbreaker:
+#      resilience4j:
+#        enabled: true
+
   datasource:
     url: jdbc:mysql://enrollment-db:3306/enrollment_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
     username: enrollment_user
@@ -50,6 +85,120 @@ management:
     health:
       show-details: always
 
-logging:
-  level:
-    com.zjgsu.rqq.enrollment_service: DEBUG
+# Feign客户端配置
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 3000
+        readTimeout: 5000
+        loggerLevel: basic
+  circuitbreaker:
+    enabled: true
+  # 启用对404错误的处理，不抛出异常
+  httpclient:
+    enabled: true
+  okhttp:
+    enabled: false
+
+# 启用Spring Cloud Circuit Breaker
+
+
+# Resilience4j熔断器配置
+resilience4j:
+  circuitbreaker:
+    instances:
+      catalogClient:
+        registerHealthIndicator: true
+        failureRateThreshold: 50  # 失败率阈值50%
+        slowCallRateThreshold: 50  # 慢调用率阈值50%
+        slowCallDurationThreshold: 2s  # 慢调用时间阈值2秒
+        slidingWindowType: COUNT_BASED  # 滑动窗口类型:基于计数
+        slidingWindowSize: 10  # 滑动窗口大小10次调用
+        minimumNumberOfCalls: 5  # 最少调用次数5次
+        eventConsumerBufferSize: 10
+
+        permittedNumberOfCallsInHalfOpenState: 3   # 半开状态允许调用3次
+        automaticTransitionFromOpenToHalfOpenEnabled: true  # 自动转换
+        waitDurationInOpenState: 10s  # 熔断后等待时间10秒
+        # 忽略404错误，不视为故障
+        ignoreExceptions:
+          - "feign.FeignException$NotFound"
+          - "org.springframework.web.client.HttpClientErrorException$NotFound"
+      userClient:
+        registerHealthIndicator: true
+        failureRateThreshold: 50  # 失败率阈值50%
+        slowCallRateThreshold: 50  # 慢调用率阈值50%
+        slowCallDurationThreshold: 2s  # 慢调用时间阈值2秒
+        slidingWindowType: COUNT_BASED  # 滑动窗口类型:基于计数
+        slidingWindowSize: 10  # 滑动窗口大小10次调用
+        minimumNumberOfCalls: 5  # 最少调用次数5次
+        eventConsumerBufferSize: 10
+
+        permittedNumberOfCallsInHalfOpenState: 3   # 半开状态允许调用3次
+        automaticTransitionFromOpenToHalfOpenEnabled: true  # 自动转换
+        waitDurationInOpenState: 10s  # 熔断后等待时间10秒
+        # 忽略404错误，不视为故障
+        ignoreExceptions:
+          - "feign.FeignException$NotFound"
+          - "org.springframework.web.client.HttpClientErrorException$NotFound"
+  retry:
+    instances:
+      catalogClient:
+        maxAttempts: 3
+        waitDuration: 1s
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+        retryExceptions:
+#          - "java.io.IOException"
+#          - "java.util.concurrent.TimeoutException"
+#          - "org.springframework.web.client.ResourceAccessException"
+          - "java.net.ConnectException"
+          - "java.net.SocketTimeoutException"
+
+      userClient:
+        maxAttempts: 3
+        waitDuration: 1s
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+        retryExceptions:
+          #          - "java.io.IOException"
+          #          - "java.util.concurrent.TimeoutException"
+          #          - "org.springframework.web.client.ResourceAccessException"
+          - "java.net.ConnectException"
+          - "java.net.SocketTimeoutException"
+
+# Spring Cloud Circuit Breaker配置
+#spring:
+#  cloud:
+#    circuitbreaker:
+#      resilience4j:
+#        enabled: true
+#    # 负载均衡配置
+#    loadbalancer:
+#      ribbon:
+#        enabled: false
+#      cache:
+#
+#
+#
+#      # enabled: true
+#
+#
+#    # OpenFeign配置
+#    openfeign:
+#      client:
+#        config:
+#          default:
+#            connectTimeout: 5000
+#            readTimeout: 5000
+#            loggerLevel: basic
+
+#logging:
+#  level:
+#    com.zjgsu.rqq.enrollment_service: DEBUG
+#    # 启用Feign和Resilience4j的详细日志
+#    feign: DEBUG
+#    org.springframework.cloud.openfeign: DEBUG
+#    io.github.resilience4j: DEBUG
+#    com.netflix.loadbalancer: DEBUG
