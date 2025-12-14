@@ -6,11 +6,11 @@
 
 本项目是一个完整的校园选课系统，包含以下微服务：
 
-1. **user-service** (用户服务) - 端口 8081
+1. **user-service** (用户服务) - 端口 8181-8183
    - 学生信息管理
    - 学生注册、查询、删除
 
-2. **catalog-service** (课程目录服务) - 端口 8082
+2. **catalog-service** (课程目录服务) - 端口 8281-8283
    - 课程信息管理
    - 课程创建、查询、更新、删除
    - 课程容量管理
@@ -40,7 +40,7 @@
 
 ### 2. 启动所有服务
 
-有多种方式可以启动所有服务：
+
 
 #### 方式一：使用 Docker Compose 命令
 ```bash
@@ -48,22 +48,14 @@
 docker-compose up -d
 ```
 
-#### 方式二：使用启动脚本（Windows）
-```bash
-# 使用批处理脚本
-start-all-services.bat
 
-# 或使用 PowerShell 脚本
-powershell -ExecutionPolicy Bypass -File start-all-services.ps1
-```
-
-#### 方式三：使用启动脚本（Linux/Mac）
+#### 方式二：使用启动脚本（Linux/Mac）
 ```bash
 # 给脚本添加执行权限
-chmod +x start-all-services.sh
+chmod +x run.sh
 
 # 运行脚本
-./start-all-services.sh
+./run.sh
 ```
 
 ### 3. 验证服务状态
