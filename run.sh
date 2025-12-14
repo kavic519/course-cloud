@@ -64,7 +64,7 @@ stop_existing_services() {
 check_required_ports() {
     log_info "检查必需端口..."
     
-    local required_ports=(8848 3306 3307 3308 3309 8081 8082 8083 8084 8085 8086 8087 8088)
+    local required_ports=(8848 3306 3307 3308 3309 8081 8082 8083 8084 8085 8086 8087 8088 8090)
     local occupied_ports=()
     
     for port in "${required_ports[@]}"; do
@@ -123,6 +123,18 @@ build_microservices() {
     fi
     cd ..
     
+    # 构建 gateway-service
+    log_info "构建 gateway-service..."
+    cd gateway-service
+    mvn clean package -DskipTests
+    if [ $? -eq 0 ]; then
+        log_success "gateway-service 构建成功"
+    else
+        log_error "gateway-service 构建失败"
+        exit 1
+    fi
+    cd ..
+    
     echo ""
 }
 
@@ -132,6 +144,7 @@ start_multi_instance_services() {
     docker build -t user-service:latest ./user-service
     docker build -t catalog-service:latest ./catalog-service
     docker build -t enrollment-service:latest ./enrollment-service
+    docker build -t gateway-service:latest ./gateway-service
     
     log_info "启动多实例服务..."
     
@@ -224,6 +237,12 @@ verify_services() {
         log_warning "enrollment-service 可能未注册到 Nacos"
     fi
     
+    if curl -s http://localhost:8848/nacos/v1/ns/service/list | grep -q "gateway-service"; then
+        log_success "gateway-service 已注册到 Nacos"
+    else
+        log_warning "gateway-service 可能未注册到 Nacos"
+    fi
+    
     echo ""
 }
 
@@ -248,6 +267,9 @@ show_service_info() {
     echo "   - 实例1: http://localhost:8083 (容器端口: 8083)"
     echo "   - 实例2: http://localhost:8088 (容器端口: 8083)"
     echo ""
+    echo "✅ gateway-service: 1个实例"
+    echo "   - 实例1: http://localhost:8090 (容器端口: 8090)"
+    echo ""
     echo "✅ Nacos 控制台: http://localhost:8848/nacos"
     echo "   - 用户名: nacos"
     echo "   - 密码: nacos"
@@ -262,6 +284,9 @@ show_service_info() {
     echo ""
     echo "3. 完整功能测试:"
     echo "   ./test-services.sh"
+    echo ""
+    echo "4. JWT认证测试:"
+    echo "   ./test-jwt-auth.sh"
     echo ""
 }
 

@@ -45,6 +45,10 @@ public class Student {
     @Email(message = "邮箱格式不正确")
     private String email;
 
+    @Column(nullable = false)
+    @NotBlank(message = "密码不能为空")
+    private String password;
+
     @CreatedDate
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -80,6 +84,9 @@ public class Student {
 
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
+
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

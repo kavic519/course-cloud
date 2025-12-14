@@ -39,7 +39,7 @@ ENROLLMENT_URL="http://localhost:8083"
 # 函数：检查服务可用性
 check_service_availability() {
     log_info "检查服务可用性..."
-
+    
     # 检查 enrollment-service
     if curl -s --head --request GET "$ENROLLMENT_URL/api/enrollments" | grep "200" > /dev/null; then
         log_success "enrollment-service 服务正常"
@@ -47,12 +47,12 @@ check_service_availability() {
         log_error "enrollment-service 服务不可用"
         exit 1
     fi
-
+    
     # 检查 user-service 实例
     log_info "检查 user-service 实例..."
     local user_instances=("user-service-1" "user-service-2" "user-service-3")
     local running_instances=0
-
+    
     for instance in "${user_instances[@]}"; do
         if docker ps --format '{{.Names}}' | grep -q "^${instance}$"; then
             log_success "$instance 正在运行"
@@ -61,21 +61,21 @@ check_service_availability() {
             log_warning "$instance 未运行"
         fi
     done
-
+    
     if [ $running_instances -eq 0 ]; then
         log_error "没有 user-service 实例在运行"
         exit 1
     fi
-
+    
     echo ""
 }
 
 # 函数：停止所有 user-service 实例
 stop_user_services() {
     log_info "=== 步骤1: 停止一个 user-service 实例 ==="
-
+    
     local user_instances=("user-service-1")
-
+    
     for instance in "${user_instances[@]}"; do
         if docker ps --format '{{.Names}}' | grep -q "^${instance}$"; then
             log_info "停止 $instance..."
@@ -89,10 +89,10 @@ stop_user_services() {
             log_warning "$instance 未运行，跳过停止"
         fi
     done
-
+    
     # 等待服务完全停止
     sleep 2
-
+    
     log_info "验证 user-service 实例状态..."
     local running_count=$(docker ps --format '{{.Names}}' | grep -c "user-service-")
     if [ $running_count -eq 0 ]; then
@@ -101,32 +101,32 @@ stop_user_services() {
         log_success "user-service-1实例已停止，"
         log_success "仍有 $running_count 个 user-service 实例在运行"
     fi
-
+    
     echo ""
 }
 
 # 函数：测试熔断降级
 test_circuit_breaker() {
     log_info "=== 步骤2: 测试故障转移功能 ==="
-
+    
     local total_requests=30
     declare -A instance_counts  # 使用关联数组
-
+    
     echo "发送 $total_requests 个请求到 userport 接口..."
     echo ""
-
+    
     for ((i=1; i<=total_requests; i++)); do
         echo -n "请求 $i/$total_requests: "
-
+        
         # 调用 userport 接口
         response=$(curl -s "$ENROLLMENT_URL/api/enrollments/userport")
-
+        
         # 解析响应，获取容器名称
         container_name=$(echo "$response" | grep -o '"containerName":"[^"]*' | cut -d'"' -f4)
-
+        
         if [ -n "$container_name" ]; then
             echo "路由到 $container_name"
-
+            
             # 统计实例被调用的次数
             if [ -z "${instance_counts[$container_name]}" ]; then
                 instance_counts[$container_name]=1
@@ -136,15 +136,15 @@ test_circuit_breaker() {
         else
             echo "无法获取容器信息"
         fi
-
+        
         # 添加小延迟，避免请求过快
         sleep 0.05
     done
-
+    
     echo ""
     log_info "user-service 故障转移统计:"
     echo "----------------------------------------"
-
+    
     local total_count=0
     for instance in "${!instance_counts[@]}"; do
         count=${instance_counts[$instance]}
@@ -155,13 +155,13 @@ test_circuit_breaker() {
         echo "  占比: ${percentage}%"
         echo ""
     done
-
+    
     if [ $total_count -eq $total_requests ]; then
         log_success "user-service 负载均衡测试完成"
     else
         log_warning "部分请求未能获取容器信息"
     fi
-
+    
     echo ""
 }
 
@@ -169,7 +169,7 @@ test_circuit_breaker() {
 # 函数：重启 user-service 实例
 restart_user_services() {
     log_info "=== 步骤4: 重启 user-service 实例 ==="
-
+    
     local user_instances=("user-service-1")
     
     for instance in "${user_instances[@]}"; do

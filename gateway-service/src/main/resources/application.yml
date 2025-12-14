@@ -1,0 +1,80 @@
+server:
+  port: 8090
+
+spring:
+  application:
+    name: gateway-service
+  
+  cloud:
+    gateway:
+      server:
+        webflux:
+          discovery:
+            locator:
+              enabled: true
+              lower-case-service-id: true
+      
+      routes:
+        # User Service Routes
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/students/**, /api/auth/**
+          filters:
+            - StripPrefix=0
+        
+        # Catalog Service Routes
+        - id: catalog-service
+          uri: lb://catalog-service
+          predicates:
+            - Path=/api/courses/**
+          filters:
+            - StripPrefix=0
+        
+        # Enrollment Service Routes
+        - id: enrollment-service
+          uri: lb://enrollment-service
+          predicates:
+            - Path=/api/enrollments/**
+          filters:
+            - StripPrefix=0
+      
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowed-origin-patterns: "*"
+            allowed-methods: "*"
+            allowed-headers: "*"
+            allow-credentials: true
+            max-age: 3600
+    
+    nacos:
+      discovery:
+        server-addr: nacos:8848
+        namespace: public
+        group: DEFAULT_GROUP
+        username: nacos
+        password: nacos
+
+# Actuator Configuration
+management:
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+# JWT Configuration
+jwt:
+  secret: "course-cloud-jwt-secret-key-512-bits-long-for-security-2025-this-is-a-very-long-secret-key-that-meets-hs512-requirements"
+  expiration: 86400000  # 24 hours in milliseconds
+
+# Logging Configuration
+logging:
+  level:
+    com.zjgsu.rqq.gateway_service: DEBUG
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.web: DEBUG

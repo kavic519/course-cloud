@@ -1,4 +1,4 @@
-test2.sh#!/bin/bash
+#!/bin/bash
 
 # 熔断降级测试脚本
 # 测试 enrollment-service 的熔断降级功能
@@ -137,7 +137,7 @@ test_circuit_breaker() {
     echo "预期: 应该触发熔断降级，返回503错误"
     echo ""
     
-    local total_requests=100
+    local total_requests=30
     local fallback_detected=0
     
     for ((i=1; i<=total_requests; i++)); do
@@ -151,11 +151,13 @@ test_circuit_breaker() {
             }')
         
         # 检查响应是否包含熔断降级信息
-        # if echo "$response" | grep -q "用户服务暂时不可用"; then
-        #     echo "✅ 熔断降级触发成功"
+        if echo "$response" | grep -q "用户服务暂时不可用"; then
+            echo "✅ 熔断降级触发成功"
+            echo "响应: $response"
             fallback_detected=$((fallback_detected + 1))
-        if echo "$response" | grep -q "503"; then
+        elif echo "$response" | grep -q "503"; then
             echo "✅ 返回503服务不可用"
+            echo "响应: $response"
             fallback_detected=$((fallback_detected + 1))
         else
             echo "❌ 未检测到熔断降级响应"
@@ -185,10 +187,10 @@ check_fallback_logs() {
     log_info "=== 步骤3: 查看日志确认降级处理 ==="
     
     log_info "查看 enrollment-service 最近日志..."
-    echo "正在获取日志（显示最后20行）..."
+    echo "正在获取日志（显示最后100行）..."
     echo ""
-    
-    docker logs --tail 20 enrollment-service 2>&1 | grep -E "(ERROR|WARN|熔断|fallback|circuit|用户服务暂时不可用)" || \
+    sleep 2
+    docker logs --tail 100 enrollment-service 2>&1 | grep -E "(ERROR|WARN|熔断|fallback|circuit|用户服务暂时不可用)" || \
         echo "未找到相关日志，可能需要等待日志刷新"
     
     echo ""

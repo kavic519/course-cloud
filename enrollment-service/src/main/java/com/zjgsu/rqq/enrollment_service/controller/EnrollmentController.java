@@ -132,6 +132,9 @@ public class EnrollmentController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<Enrollment>> enrollStudent(
+            @RequestHeader(value = "X-User-Id", required = false) String userId,
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @RequestHeader(value = "X-User-Role", required = false) String userRole,
             @RequestBody Map<String, String> request) {
         try {
             String courseCode = request.get("courseCode");
@@ -140,6 +143,12 @@ public class EnrollmentController {
             if (courseCode == null || studentId == null) {
                 return ResponseEntity.status(401)//888
                         .body(ApiResponse.error(406, "courseCode和studentId不能为空")); //888
+            }
+
+            // 记录网关传递的用户信息（用于调试和审计）
+            if (userId != null || username != null || userRole != null) {
+                log.info("选课请求 - 用户信息: userId={}, username={}, role={}, courseCode={}, studentId={}",
+                        userId, username, userRole, courseCode, studentId);
             }
 
             Enrollment enrollment = enrollmentService.enrollStudent(courseCode, studentId);
