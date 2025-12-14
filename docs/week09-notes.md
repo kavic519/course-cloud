@@ -269,36 +269,42 @@ chmod +x jwt.sh
 
 #### 3.3.1 用户注册成功
 POST ```http://localhost:8090/api/auth/register```
+
 ![用户注册成功截图](images/jwt-register-success.png)
 *说明：用户注册成功，返回200状态码和用户信息*
 
 ### ==============================================================
 #### 3.3.2 用户登录成功获取Token
 POST ```http://localhost:8090/api/auth/login```
+
 ![用户登录成功截图](images/jwt-login-success.png)
 *说明：用户登录成功，返回200状态码和JWT Token*
 
 ### ==============================================================
 #### 3.3.3 未认证访问返回401
 GET ```http://localhost:8090/api/students``` 不带Token
+
 ![未认证访问截图](images/jwt-unauthorized-401.png)
 *说明：未提供Token访问受保护接口，返回401未授权*
 
 ### ==============================================================
 #### 3.3.4 认证成功访问返回200
 GET ```http://localhost:8090/api/students``` 带Token
+
 ![认证成功访问截图](images/jwt-authorized-200.png)
 *说明：使用有效Token访问受保护接口，返回200成功*
 
 ### ==============================================================
 #### 3.3.5 无效Token返回401
 GET ```http://localhost:8090/api/students``` 带无效Token
+
 ![无效Token截图](images/jwt-invalid-token-401.png)
 *说明：使用无效Token访问受保护接口，返回401未授权*
 
 ### ==============================================================
 #### 3.3.6 白名单接口无需Token
 GET ```http://localhost:8090/api/auth/health``` 不带Token
+
 ![白名单接口截图](images/jwt-whitelist-success.png)
 *说明：访问白名单接口（健康检查），无需Token返回200成功*
 
