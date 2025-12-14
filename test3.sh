@@ -1,10 +1,10 @@
-test2.sh#!/bin/bash
+#!/bin/bash
 
 # 熔断降级测试脚本
 # 测试 enrollment-service 的熔断降级功能
 
 echo "=============================================="
-echo "   熔断降级测试脚本"
+echo "   故障转移测试脚本"
 echo "=============================================="
 echo "开始时间: $(date)"
 echo ""
@@ -39,7 +39,7 @@ ENROLLMENT_URL="http://localhost:8083"
 # 函数：检查服务可用性
 check_service_availability() {
     log_info "检查服务可用性..."
-    
+
     # 检查 enrollment-service
     if curl -s --head --request GET "$ENROLLMENT_URL/api/enrollments" | grep "200" > /dev/null; then
         log_success "enrollment-service 服务正常"
@@ -47,12 +47,12 @@ check_service_availability() {
         log_error "enrollment-service 服务不可用"
         exit 1
     fi
-    
+
     # 检查 user-service 实例
     log_info "检查 user-service 实例..."
     local user_instances=("user-service-1" "user-service-2" "user-service-3")
     local running_instances=0
-    
+
     for instance in "${user_instances[@]}"; do
         if docker ps --format '{{.Names}}' | grep -q "^${instance}$"; then
             log_success "$instance 正在运行"
@@ -61,21 +61,21 @@ check_service_availability() {
             log_warning "$instance 未运行"
         fi
     done
-    
+
     if [ $running_instances -eq 0 ]; then
         log_error "没有 user-service 实例在运行"
         exit 1
     fi
-    
+
     echo ""
 }
 
 # 函数：停止所有 user-service 实例
 stop_user_services() {
-    log_info "=== 步骤1: 停止所有 user-service 实例 ==="
-    
-    local user_instances=("user-service-1" "user-service-2" "user-service-3")
-    
+    log_info "=== 步骤1: 停止一个 user-service 实例 ==="
+
+    local user_instances=("user-service-1")
+
     for instance in "${user_instances[@]}"; do
         if docker ps --format '{{.Names}}' | grep -q "^${instance}$"; then
             log_info "停止 $instance..."
@@ -89,119 +89,88 @@ stop_user_services() {
             log_warning "$instance 未运行，跳过停止"
         fi
     done
-    
+
     # 等待服务完全停止
-    sleep 5
-    
+    sleep 2
+
     log_info "验证 user-service 实例状态..."
     local running_count=$(docker ps --format '{{.Names}}' | grep -c "user-service-")
     if [ $running_count -eq 0 ]; then
-        log_success "所有 user-service 实例已停止"
+        log_error "所有 user-service 实例已停止"
     else
-        log_warning "仍有 $running_count 个 user-service 实例在运行"
+        log_success "user-service-1实例已停止，"
+        log_success "仍有 $running_count 个 user-service 实例在运行"
     fi
-    
+
     echo ""
 }
 
 # 函数：测试熔断降级
 test_circuit_breaker() {
-    log_info "=== 步骤2: 测试熔断降级功能 ==="
-    
-    # 创建测试课程（如果不存在）
-    log_info "创建测试课程..."
-    local course_response=$(curl -s -X POST "http://localhost:8282/api/courses" \
-        -H "Content-Type: application/json" \
-        -d '{
-            "code": "TEST001",
-            "title": "熔断测试课程",
-            "instructor": {
-                "id": "T999",
-                "name": "测试教师",
-                "email": "test@example.edu.cn"
-            },
-            "schedule": {
-                "dayOfWeek": "MONDAY",
-                "startTime": "08:00",
-                "endTime": "10:00",
-                "location": "测试教室"
-            },
-            "capacity": 100,
-            "enrolled": 0
-        }')
-    
-    echo "课程创建响应: $course_response"
-    
-    # 发送选课请求（应该触发熔断降级）
-    log_info "发送选课请求（user-service 不可用）..."
-    echo "预期: 应该触发熔断降级，返回503错误"
+    log_info "=== 步骤2: 测试故障转移功能 ==="
+
+    local total_requests=30
+    declare -A instance_counts  # 使用关联数组
+
+    echo "发送 $total_requests 个请求到 userport 接口..."
     echo ""
-    
-    local total_requests=100
-    local fallback_detected=0
-    
+
     for ((i=1; i<=total_requests; i++)); do
         echo -n "请求 $i/$total_requests: "
-        
-        local response=$(curl -s -X POST "$ENROLLMENT_URL/api/enrollments" \
-            -H "Content-Type: application/json" \
-            -d '{
-                "courseCode": "TEST001",
-                "studentId": "S999999"
-            }')
-        
-        # 检查响应是否包含熔断降级信息
-        # if echo "$response" | grep -q "用户服务暂时不可用"; then
-        #     echo "✅ 熔断降级触发成功"
-            fallback_detected=$((fallback_detected + 1))
-        if echo "$response" | grep -q "503"; then
-            echo "✅ 返回503服务不可用"
-            fallback_detected=$((fallback_detected + 1))
+
+        # 调用 userport 接口
+        response=$(curl -s "$ENROLLMENT_URL/api/enrollments/userport")
+
+        # 解析响应，获取容器名称
+        container_name=$(echo "$response" | grep -o '"containerName":"[^"]*' | cut -d'"' -f4)
+
+        if [ -n "$container_name" ]; then
+            echo "路由到 $container_name"
+
+            # 统计实例被调用的次数
+            if [ -z "${instance_counts[$container_name]}" ]; then
+                instance_counts[$container_name]=1
+            else
+                instance_counts[$container_name]=$((instance_counts[$container_name] + 1))
+            fi
         else
-            echo "❌ 未检测到熔断降级响应"
-            echo "响应: $response"
+            echo "无法获取容器信息"
         fi
-        
-        sleep 0.1
+
+        # 添加小延迟，避免请求过快
+        sleep 0.05
     done
-    
+
     echo ""
-    log_info "熔断降级测试结果:"
+    log_info "user-service 故障转移统计:"
     echo "----------------------------------------"
-    echo "总请求数: $total_requests"
-    echo "检测到降级响应: $fallback_detected"
-    
-    if [ $fallback_detected -gt 0 ]; then
-        log_success "熔断降级功能正常工作"
+
+    local total_count=0
+    for instance in "${!instance_counts[@]}"; do
+        count=${instance_counts[$instance]}
+        total_count=$((total_count + count))
+        percentage=$((count * 100 / total_requests))
+        echo "实例: $instance"
+        echo "  调用次数: $count"
+        echo "  占比: ${percentage}%"
+        echo ""
+    done
+
+    if [ $total_count -eq $total_requests ]; then
+        log_success "user-service 负载均衡测试完成"
     else
-        log_error "熔断降级功能未按预期工作"
+        log_warning "部分请求未能获取容器信息"
     fi
-    
+
     echo ""
 }
 
-# 函数：查看日志确认降级处理
-check_fallback_logs() {
-    log_info "=== 步骤3: 查看日志确认降级处理 ==="
-    
-    log_info "查看 enrollment-service 最近日志..."
-    echo "正在获取日志（显示最后20行）..."
-    echo ""
-    
-    docker logs --tail 20 enrollment-service 2>&1 | grep -E "(ERROR|WARN|熔断|fallback|circuit|用户服务暂时不可用)" || \
-        echo "未找到相关日志，可能需要等待日志刷新"
-    
-    echo ""
-    log_info "提示: 可以手动查看完整日志:"
-    echo "  docker logs -f enrollment-service"
-    echo ""
-}
 
 # 函数：重启 user-service 实例
 restart_user_services() {
     log_info "=== 步骤4: 重启 user-service 实例 ==="
-    
-    local user_instances=("user-service-1" "user-service-2" "user-service-3")
+
+    local user_instances=("user-service-1")
     
     for instance in "${user_instances[@]}"; do
         log_info "启动 $instance..."
